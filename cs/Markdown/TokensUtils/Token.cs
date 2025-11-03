@@ -3,11 +3,11 @@ namespace Markdown.TokensUtils;
 public class Token
 {
     public string Value { get; set; }
-    public string TokenType { get; set; }
+    public TokenType Type { get; set; }
 
-    public Token(string value, string tokenType)
+    public Token(string value, TokenType type)
     {
         Value = value;
-        TokenType = tokenType;
+        Type = type;
     }
 }

@@ -1,7 +1,12 @@
-namespace Markdown.TokensUtils;
-
-public static class TagRenderer
+namespace Markdown.TokensUtils
 {
-    public static string WrapEm(string content) => $"<em>{content}</em>";
-    //остальные методы по аналогии для каждого тега
+    public static class TagRenderer
+    {
+        public static string Wrap(TokenType type, string content)
+            => type switch
+            {
+                TokenType.Italic      => $"<em>{content}</em>",
+                _ => content
+            };
+    }
 }
