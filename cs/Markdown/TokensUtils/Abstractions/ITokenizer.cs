@@ -2,5 +2,5 @@ namespace Markdown.TokensUtils.Abstractions;
 
 public interface ITokenizer
 {
-    public IEnumerable<Token> Tokenize(string line);
+    public IEnumerable<Token> Tokenize(string? line);
 }
