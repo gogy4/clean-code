@@ -155,4 +155,21 @@ public class MarkdownTests
         var expected = "Если внутри подчерков пустая строка _____, то они остаются символами подчерка.\n";
         result.Should().Be(expected);
     }
+    
+    [Test]
+    public void Markdown_ShouldProcessLongInputWithoutCrashing_Test()
+    {
+        var longLine = new string('_', 10_000) + "тест" + new string('_', 10_000);
+
+        var result = render.RenderText(longLine);
+
+        result.Length.Should().BeGreaterThanOrEqualTo(longLine.Length);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        render.RenderText(longLine);
+        stopwatch.Stop();
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000);
+    }
+
+
 }
