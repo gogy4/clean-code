@@ -81,10 +81,10 @@ public class MarkdownTests
     [Test]
     public void Markdown_ShouldNotRenderEmOrStrong_WhenUnderscoresSurroundNumbers_Test()
     {
-        var line = "Подчерки внутри текста c цифрами_12__3 не считаются выделением и должны оставаться символами подчерка.";
+        var line = "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.";
         var result = render.RenderText(line);
         var expected =
-            "Подчерки внутри текста c цифрами_12__3 не считаются выделением и должны оставаться символами подчерка.";
+            "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.";
 
         result.Should().Be(expected);
     }
@@ -170,5 +170,14 @@ public class MarkdownTests
         render.RenderText(longLine);
         stopwatch.Stop();
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000);
+    }
+
+    [Test]
+    public void Markdown_ShouldRenderH1Tag_WhenParagraphStartsWithHashAndSpace_Test()
+    {
+        var line = "# Заголовок __с _разными_ символами__";
+        var result = render.RenderText(line);
+        var expected = "<h1>Заголовок <strong>с <em>разными</em> символами</strong></h1>";
+        result.Should().Be(expected);
     }
 }
