@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -165,11 +166,9 @@ public class MarkdownTests
 
         result.Length.Should().BeGreaterThanOrEqualTo(longLine.Length);
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         render.RenderText(longLine);
         stopwatch.Stop();
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000);
     }
-
-
 }

@@ -25,25 +25,23 @@ public class Tokenizer : ITokenizer
             {
                 case '\\':
                     yield return new Token("\\", TokenType.Escape);
-                    i++;
                     break;
                 case '_' when i + 1 < line.Length && line[i + 1] == '_':
                     yield return new Token("__", TokenType.Strong);
-                    i += 2;
+                    i++;
                     break;
                 case '_':
                     yield return new Token("_", TokenType.Italic);
-                    i++;
                     break;
                 case '#' when i + 1 < line.Length && line[i + 1] == ' ':
                     yield return new Token("#", TokenType.Header);
-                    i+=2;
+                    i++;
                     break;
                 default:
                     tokenizeLineStringBuilder.Append(currentChar);
-                    i++;
                     break;
             }
+            i++;
         }
 
         if (tokenizeLineStringBuilder.Length > 0)
