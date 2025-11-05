@@ -2,9 +2,9 @@ namespace Markdown.Dto;
 
 public enum TokenType
 {
+    Text = 0,
     Italic,
     Strong,
-    Text,
     Escape,
     Header,
     End
