@@ -1,4 +1,4 @@
-namespace Markdown.TokensUtils;
+namespace Markdown.Dto;
 
 public enum TokenType
 {

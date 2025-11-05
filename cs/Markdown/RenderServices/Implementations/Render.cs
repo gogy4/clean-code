@@ -1,7 +1,9 @@
 ﻿using System.Text;
+using Markdown.Dto;
 using Markdown.Extensions;
 using Markdown.TokensUtils;
 using Markdown.TokensUtils.Abstractions;
+using Markdown.TokensUtils.Implementations;
 
 namespace Markdown
 {
@@ -27,7 +29,7 @@ namespace Markdown
             var tokens = tokenizer.Tokenize(line).ToList();
             var result = new StringBuilder();
 
-            var tagStack = new Stack<(TokenType Type, string Marker, StringBuilder Content)>();
+            var tagStack = new Stack<Tag>();
             var skipNextAsMarkup = false;
 
             foreach (var token in tokens)
@@ -68,7 +70,7 @@ namespace Markdown
             return result.ToString();
         }
 
-        private void ProcessStrong(Token token, Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack,
+        private void ProcessStrong(Token token, Stack<Tag> tagStack,
             StringBuilder result)
         {
             if (tagStack.Count > 0)
@@ -86,16 +88,16 @@ namespace Markdown
                 }
                 else
                 {
-                    tagStack.Push((token.Type, token.Value, new StringBuilder()));
+                    tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
                 }
             }
             else
             {
-                tagStack.Push((token.Type, token.Value, new StringBuilder()));
+                tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
             }
         }
 
-        private void ProcessItalic(Token token, Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack,
+        private void ProcessItalic(Token token, Stack<Tag> tagStack,
             StringBuilder result)
         {
             if (tagStack.Count > 0 && tagStack.Peek().Type == token.Type)
@@ -104,16 +106,16 @@ namespace Markdown
             }
             else
             {
-                tagStack.Push((token.Type, token.Value, new StringBuilder()));
+                tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
             }
         }
 
-        private void ProcessHeader(Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack)
+        private void ProcessHeader(Stack<Tag> tagStack)
         {
-            tagStack.Push((TokenType.Header, "#", new StringBuilder()));
+            tagStack.Push(new Tag(TokenType.Header, "#", new StringBuilder()));
         }
 
-        private void ProcessEnd(Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack,
+        private void ProcessEnd(Stack<Tag> tagStack,
             StringBuilder result)
         {
             while (tagStack.Count > 0)
@@ -130,14 +132,14 @@ namespace Markdown
             }
         }
 
-        private void AppendToParentOrResult(Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack,
+        private void AppendToParentOrResult(Stack<Tag> tagStack,
             StringBuilder result, string content)
         {
             if (tagStack.Count > 0) tagStack.Peek().Content.Append(content);
             else result.Append(content);
         }
 
-        private void CloseTopTag(Stack<(TokenType Type, string Marker, StringBuilder Content)> tagStack,
+        private void CloseTopTag(Stack<Tag> tagStack,
             StringBuilder result)
         {
             var top = tagStack.Pop();

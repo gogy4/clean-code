@@ -1,7 +1,8 @@
 using System.Text;
+using Markdown.Dto;
 using Markdown.TokensUtils.Abstractions;
 
-namespace Markdown.TokensUtils;
+namespace Markdown.TokensUtils.Implementations;
 
 public class Tokenizer : ITokenizer
 {

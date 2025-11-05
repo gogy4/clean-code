@@ -1,3 +1,5 @@
+using Markdown.Dto;
+
 namespace Markdown.TokensUtils
 {
     public static class TagRender
