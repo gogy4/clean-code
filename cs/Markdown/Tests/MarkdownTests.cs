@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using FluentAssertions;
+using FluentAssertions.Execution;
 using NUnit.Framework;
 
 namespace Markdown.Tests;
@@ -8,176 +9,114 @@ public class MarkdownTests
 {
     private IRender render = new Render();
 
-    [Test]
-    public void Markdown_ShouldBeTextWrappedWithEmTag_WhenSurroundedBySingleUnderscores_Test()
+    [TestCaseSource(nameof(MarkdownCases))]
+    public void Markdown_RenderText_ShouldMatchExpected(string line, string expectedAndErrorMessage)
     {
-        var line =
-            "Текст, _окруженный с двух сторон_ одинарными символами подчерка";
-
         var result = render.RenderText(line);
-        var expected = "Текст, <em>окруженный с двух сторон</em> одинарными символами подчерка";
-        result
-            .Should()
-            .Be(expected);
+        result.Should().Be(expectedAndErrorMessage, expectedAndErrorMessage);
     }
 
-    [Test]
-    public void Markdown_ShouldBeTextWrappedWithStrongTag_WhenSurroundedByDoubleUnderscores_Test()
-    {
-        var line = "__Выделенный двумя символами текст__ должен становиться полужирным";
-
-        var result = render.RenderText(line);
-        var expected = "<strong>Выделенный двумя символами текст</strong> должен становиться полужирным";
-        result
-            .Should()
-            .Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldAddEscapeCharacter_WhenTextContainsMarkdownTags_Test()
-    {
-        var line = "Любой тег можно экранировать \\<em> и даже \\<strong>";
-        var result = render.RenderText(line);
-        var expected = "Любой тег можно экранировать \\<em> и даже \\<strong>";
-        result
-            .Should()
-            .Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldBeTextNotWrappedWithEmTag_WhenUnderscoresAreEscaped_Test()
-    {
-        var line =
-            "Любой символ можно экранировать, чтобы он не считался частью разметки.\n\\_Вот это\\_, не должно выделиться тегом \\<em>. \n Также \\__Это не выделяется\\__ тегом \\<strong>.";
-        var result = render.RenderText(line);
-        var expected =
-            "Любой символ можно экранировать, чтобы он не считался частью разметки.\n\\_Вот это\\_, не должно выделиться тегом \\<em>. \n Также \\__Это не выделяется\\__ тегом \\<strong>.";
-        result
-            .Should()
-            .Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldRenderNestedTagsCorrectly_WhenDoubleAndSingleUnderscoresAreMixed_Test()
-    {
-        var line = "Внутри __двойного выделения _одинарное_ тоже__ работает.";
-        var result = render.RenderText(line);
-        var expected = "Внутри <strong>двойного выделения <em>одинарное</em> тоже</strong> работает.";
-
-        result
-            .Should()
-            .Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderStrongInsideEm_WhenDoubleUnderscoresInsideSingleUnderscore_Test()
-    {
-        var line = "Но не наоборот — внутри _одинарного __двойное__ не_ работает.";
-        var result = render.RenderText(line);
-        var expected = "Но не наоборот — внутри <em>одинарного __двойное__ не</em> работает.";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenUnderscoresSurroundNumbers_Test()
-    {
-        var line = "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.";
-        var result = render.RenderText(line);
-        var expected =
-            "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.";
-
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldRenderEmOrStrong_WhenUnderscoresInsideWord_Test()
-    {
-        var line = "Однако выделять часть слова они могут: и в _нач_але, и в сер_еди_не, и в кон__це.__";
-        var result = render.RenderText(line);
-        var expected = "Однако выделять часть слова они могут: и в <em>нач</em>але, и в сер<em>еди</em>не, и в кон<strong>це.</strong>";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenUnderscoresAcrossMultipleWords_Test()
-    {
-        var line = "В то же время выделение в ра_зных сл_овах не работает.";
-        var result = render.RenderText(line);
-        var expected = "В то же время выделение в ра_зных сл_овах не работает.";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenUnmatchedUnderscoresInParagraph_Test()
-    {
-        var line = "__Непарные_ символы в рамках одного абзаца не считаются выделением.";
-        var result = render.RenderText(line);
-        var expected = "__Непарные_ символы в рамках одного абзаца не считаются выделением.";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenUnderscoreFollowedByWhitespace_Test()
-    {
-        var line =
-            "За подчерками, начинающими выделение, должен следовать непробельный символ. Иначе эти_ подчерки_ не считаются выделением \nи остаются просто символами подчерка.";
-        var result = render.RenderText(line);
-        var expected =
-            "За подчерками, начинающими выделение, должен следовать непробельный символ. Иначе эти_ подчерки_ не считаются выделением \nи остаются просто символами подчерка.";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenEndingUnderscorePrecededByWhitespace_Test()
-    {
-        var line =
-            "Подчерки, заканчивающие выделение, должны следовать за непробельным символом. Иначе эти _подчерки _не считаются_ окончанием выделения \nи остаются просто символами подчерка.";
-        var result =  render.RenderText(line);
-        var expected =
-            "Подчерки, заканчивающие выделение, должны следовать за непробельным символом. Иначе эти _подчерки _не считаются_ окончанием выделения \nи остаются просто символами подчерка.";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderEmOrStrong_WhenSingleAndDoubleUnderscoresIntersect_Test()
-    {
-        var line = "В случае __пересечения _двойных__ и одинарных_ подчерков ни один из них не считается выделением.\n";
-        var result = render.RenderText(line);
-        var expected =
-            "В случае __пересечения _двойных__ и одинарных_ подчерков ни один из них не считается выделением.\n";
-        result.Should().Be(expected);
-    }
-
-    [Test]
-    public void Markdown_ShouldNotRenderStrongOrEm_WhenDoubleUnderscoresAreEmpty_Test()
-    {
-        var line = "Если внутри подчерков пустая строка _____, то они остаются символами подчерка.\n";
-        var result = render.RenderText(line);
-        var expected = "Если внутри подчерков пустая строка _____, то они остаются символами подчерка.\n";
-        result.Should().Be(expected);
-    }
-    
     [Test]
     public void Markdown_ShouldProcessLongInputWithoutCrashing_Test()
     {
         var longLine = new string('_', 10_000) + "тест" + new string('_', 10_000);
-
         var result = render.RenderText(longLine);
 
-        result.Length.Should().BeGreaterThanOrEqualTo(longLine.Length);
+        using (new AssertionScope())
+        {
+            result.Length.Should().BeGreaterThanOrEqualTo(longLine.Length, "рендер не должен обрезать длинный ввод");
 
-        var stopwatch = Stopwatch.StartNew();
-        render.RenderText(longLine);
-        stopwatch.Stop();
-        stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000);
+            var stopwatch = Stopwatch.StartNew();
+            render.RenderText(longLine);
+            stopwatch.Stop();
+
+            stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, "рендер должен завершаться за приемлемое время");
+        }
     }
-
-    [Test]
-    public void Markdown_ShouldRenderH1Tag_WhenParagraphStartsWithHashAndSpace_Test()
+    
+    public static IEnumerable<TestCaseData> MarkdownCases
     {
-        var line = "# Заголовок __с _разными_ символами__";
-        var result = render.RenderText(line);
-        var expected = "<h1>Заголовок <strong>с <em>разными</em> символами</strong></h1>";
-        result.Should().Be(expected);
+        get
+        {
+            yield return new TestCaseData(
+                "Текст, _окруженный с двух сторон_ одинарными символами подчерка",
+                "Текст, <em>окруженный с двух сторон</em> одинарными символами подчерка"
+            ).SetName("SingleUnderscores_Em");
+
+            yield return new TestCaseData(
+                "__Выделенный двумя символами текст__ должен становиться полужирным",
+                "<strong>Выделенный двумя символами текст</strong> должен становиться полужирным"
+            ).SetName("DoubleUnderscores_Strong");
+
+            yield return new TestCaseData(
+                "Любой тег можно экранировать \\<em> и даже \\<strong>",
+                "Любой тег можно экранировать \\<em> и даже \\<strong>"
+            ).SetName("EscapeMarkdownTags");
+
+            yield return new TestCaseData(
+                "Любой символ можно экранировать, чтобы он не считался частью разметки.\n\\_Вот это\\_, не должно выделиться тегом \\<em>. \n Также \\__Это не выделяется\\__ тегом \\<strong>.",
+                "Любой символ можно экранировать, чтобы он не считался частью разметки.\n\\_Вот это\\_, не должно выделиться тегом \\<em>. \n Также \\__Это не выделяется\\__ тегом \\<strong>."
+            ).SetName("EscapedUnderscores_NoRender");
+
+            yield return new TestCaseData(
+                "Внутри __двойного выделения _одинарное_ тоже__ работает.",
+                "Внутри <strong>двойного выделения <em>одинарное</em> тоже</strong> работает."
+            ).SetName("Nested_StrongAndEm");
+
+            yield return new TestCaseData(
+                "Но не наоборот — внутри _одинарного __двойное__ не_ работает.",
+                "Но не наоборот — внутри <em>одинарного __двойное__ не</em> работает."
+            ).SetName("StrongInsideEm_NoRender");
+
+            yield return new TestCaseData(
+                "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.",
+                "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка."
+            ).SetName("UnderscoresAroundNumbers_NoRender");
+
+            yield return new TestCaseData(
+                "Однако выделять часть слова они могут: и в _нач_але, и в сер_еди_не, и в кон__це.__",
+                "Однако выделять часть слова они могут: и в <em>нач</em>але, и в сер<em>еди</em>не, и в кон<strong>це.</strong>"
+            ).SetName("UnderscoresInsideWord_Render");
+
+            yield return new TestCaseData(
+                "В то же время выделение в ра_зных сл_овах не работает.",
+                "В то же время выделение в ра_зных сл_овах не работает."
+            ).SetName("UnderscoresAcrossWords_NoRender");
+
+            yield return new TestCaseData(
+                "__Непарные_ символы в рамках одного абзаца не считаются выделением.",
+                "__Непарные_ символы в рамках одного абзаца не считаются выделением."
+            ).SetName("UnmatchedUnderscores_NoRender");
+
+            yield return new TestCaseData(
+                "За подчерками, начинающими выделение, должен следовать непробельный символ. Иначе эти_ подчерки_ не считаются выделением \nи остаются просто символами подчерка.",
+                "За подчерками, начинающими выделение, должен следовать непробельный символ. Иначе эти_ подчерки_ не считаются выделением \nи остаются просто символами подчерка."
+            ).SetName("StartingUnderscoreFollowedByWhitespace_NoRender");
+
+            yield return new TestCaseData(
+                "Подчерки, заканчивающие выделение, должны следовать за непробельным символом. Иначе эти _подчерки _не считаются_ окончанием выделения \nи остаются просто символами подчерка.",
+                "Подчерки, заканчивающие выделение, должны следовать за непробельным символом. Иначе эти _подчерки <em>не считаются</em> окончанием выделения \nи остаются просто символами подчерка."
+            ).SetName("EndingUnderscorePrecededByWhitespace_Render");
+
+            yield return new TestCaseData(
+                "В случае __пересечения _двойных__ и одинарных_ подчерков ни один из них не считается выделением.\n",
+                "В случае __пересечения _двойных__ и одинарных_ подчерков ни один из них не считается выделением.\n"
+            ).SetName("IntersectingSingleAndDoubleUnderscores_NoRender");
+
+            yield return new TestCaseData(
+                "Если внутри подчерков пустая строка _____, то они остаются символами подчерка.\n",
+                "Если внутри подчерков пустая строка _____, то они остаются символами подчерка.\n"
+            ).SetName("EmptyDoubleUnderscores_NoRender");
+
+            yield return new TestCaseData(
+                "# Заголовок __с _разными_ символами__",
+                "<h1>Заголовок <strong>с <em>разными</em> символами</strong></h1>"
+            ).SetName("H1Tag_Render");
+
+            yield return new TestCaseData(
+                "___Слово___",
+                "___Слово___"
+            ).SetName("TripleUnderscore_NoRender");
+        }
     }
 }
