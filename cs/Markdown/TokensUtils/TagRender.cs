@@ -7,7 +7,7 @@ namespace Markdown.TokensUtils
         public static string Wrap(TokenType type, string content)
             => type switch
             {
-                TokenType.Italic      => $"<em>{content}</em>",
+                TokenType.Italic => $"<em>{content}</em>",
                 TokenType.Strong => $"<strong>{content}</strong>",
                 TokenType.Escape => $"<escaped>{content}</escaped>",
                 TokenType.Header => $"<h1>{content}</h1>",

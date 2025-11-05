@@ -6,57 +6,48 @@ namespace Markdown.TokensUtils.Implementations;
 
 public class Tokenizer : ITokenizer
 {
+    private static readonly HashSet<char> SpecialSymbols = new() { '\\', '_', '#' };
+
     public IEnumerable<Token> Tokenize(string? line)
     {
         ArgumentNullException.ThrowIfNull(line);
 
-        var tokenizeLineStringBuilder = new StringBuilder();
+        var sb = new StringBuilder();
         var i = 0;
+
         while (i < line.Length)
         {
-            var currentChar = line[i];
-            
-            if (IsSpecialSymbol(currentChar) && tokenizeLineStringBuilder.Length > 0)
+            var c = line[i];
+
+            if (SpecialSymbols.Contains(c) && sb.Length > 0)
             {
-                yield return new Token(tokenizeLineStringBuilder.ToString(), TokenType.Text);
-                tokenizeLineStringBuilder.Clear();
+                yield return new Token(sb.ToString(), TokenType.Text, false, false, false);
+                sb.Clear();
             }
-            
-            switch (currentChar)
+
+            var token = MapSpecialSymbol.Specialize(c, line, i);
+            if (token != null)
             {
-                case '\\':
-                    yield return new Token("\\", TokenType.Escape);
-                    break;
-                case '_' when i + 1 < line.Length && line[i + 1] == '_':
-                    yield return new Token("__", TokenType.Strong);
+                yield return token;
+
+                if (token.Type is TokenType.Header or TokenType.Strong)
+                {
                     i++;
-                    break;
-                case '_':
-                    yield return new Token("_", TokenType.Italic);
-                    break;
-                case '#' when i + 1 < line.Length && line[i + 1] == ' ':
-                    yield return new Token("#", TokenType.Header);
-                    i++;
-                    break;
-                default:
-                    tokenizeLineStringBuilder.Append(currentChar);
-                    break;
+                }
             }
+            else
+            {
+                sb.Append(c);
+            }
+
             i++;
         }
 
-        if (tokenizeLineStringBuilder.Length > 0)
-            yield return new Token(tokenizeLineStringBuilder.ToString(), TokenType.Text);
-
-        yield return new Token(string.Empty, TokenType.End);
-    }
-
-    private bool IsSpecialSymbol(char c)
-    {
-        return c switch
+        if (sb.Length > 0)
         {
-            '\\' or '_' or '#' => true,
-            _ => false
-        };
+            yield return new Token(sb.ToString(), TokenType.Text, false, false, false);
+        }
+
+        yield return new Token(string.Empty, TokenType.End, false, false, false);
     }
 }
