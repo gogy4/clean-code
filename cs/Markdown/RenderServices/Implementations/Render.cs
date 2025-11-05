@@ -78,19 +78,13 @@ namespace Markdown
 
         private void ProcessStrong(Token token, Stack<Tag> tagsStack, StringBuilder result)
         {
-            var canOpen = token.CanOpen;
-            var canClose = token.CanClose;
-
             var parent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
-            if (canClose && tagsStack.Count > 0 && parent.Token.Type == token.Type &&
-                !(parent.Token.InsideWord && parent.Content.ToString().Contains(' '))
-                && !decimal.TryParse(parent.Content.ToString().AsSpan(2), out _) &&
-                parent.Content.ToString().AsSpan(2).Length > 0)
+
+            if (token.CanClose && tagsStack.Count > 0 && !IsInvalidCloseContext(parent, token, 2))
             {
                 var popParent = tagsStack.Pop();
                 var grandParent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
-                var shouldNotClose = grandParent is not null && grandParent.Token.Type == TokenType.Italic &&
-                                     grandParent.isOpen;
+                var shouldNotClose = grandParent is not null && grandParent.Token.Type == TokenType.Italic && grandParent.isOpen;
 
                 if (shouldNotClose)
                 {
@@ -103,7 +97,7 @@ namespace Markdown
                     CloseTopTag(tagsStack, result);
                 }
             }
-            else if (canOpen || (canClose && tagsStack.Count > 0 && tagsStack.Peek().isOpen))
+            else if (token.CanOpen || (token.CanClose && tagsStack.Count > 0 && tagsStack.Peek().isOpen))
             {
                 tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
             }
@@ -116,12 +110,8 @@ namespace Markdown
         private void ProcessItalic(Token token, Stack<Tag> tagsStack, StringBuilder result)
         {
             var canOpen = token.CanOpen;
-            var canClose = token.CanClose;
             var parent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
-            if (canClose && tagsStack.Count > 0 && parent.Token.Type == token.Type &&
-                !(parent.Token.InsideWord && parent.Content.ToString().Contains(' '))
-                && !decimal.TryParse(parent.Content.ToString().AsSpan(1), out _)
-                && parent.Content.ToString().AsSpan(2).Length > 0)
+            if (token.CanClose && tagsStack.Count > 0 && !IsInvalidCloseContext(parent, token, 2))
             {
                 CloseTopTag(tagsStack, result);
             }
@@ -158,9 +148,13 @@ namespace Markdown
         private void AppendToParentOrResult(Stack<Tag> tagsStack, StringBuilder result, string content)
         {
             if (tagsStack.Count > 0)
+            {
                 tagsStack.Peek().Content.Append(content);
+            }
             else
+            {
                 result.Append(content);
+            }
         }
 
         private void CloseTopTag(Stack<Tag> tagsStack, StringBuilder result)
@@ -175,6 +169,16 @@ namespace Markdown
 
             var wrapped = TagRender.Wrap(top.Token.Type, innerContent);
             AppendToParentOrResult(tagsStack, result, wrapped);
+        }
+        
+        private bool IsInvalidCloseContext(Tag parent, Token token, int markerLength)
+        {
+            if (parent == null) return true;
+            if (parent.Token.Type != token.Type) return true;
+            if (parent.Token.InsideWord && parent.Content.ToString().Contains(' ')) return true;
+
+            var contentSpan = parent.Content.ToString().AsSpan(markerLength);
+            return contentSpan.Length == 0 || decimal.TryParse(contentSpan, out _);
         }
     }
 }
