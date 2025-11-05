@@ -29,14 +29,14 @@ namespace Markdown
             var tokens = tokenizer.Tokenize(line).ToList();
             var result = new StringBuilder();
 
-            var tagStack = new Stack<Tag>();
+            var tagsStack = new Stack<Tag>();
             var skipNextAsMarkup = false;
 
             foreach (var token in tokens)
             {
                 if (skipNextAsMarkup)
                 {
-                    AppendToParentOrResult(tagStack, result, token.Value);
+                    AppendToParentOrResult(tagsStack, result, token.Value);
                     skipNextAsMarkup = false;
                     continue;
                 }
@@ -44,24 +44,30 @@ namespace Markdown
                 switch (token.Type)
                 {
                     case TokenType.Text:
-                        AppendToParentOrResult(tagStack, result, token.Value);
+                        AppendToParentOrResult(tagsStack, result, token.Value);
                         break;
+
                     case TokenType.Escape:
-                        AppendToParentOrResult(tagStack, result, token.Value);
+                        AppendToParentOrResult(tagsStack, result, token.Value);
                         skipNextAsMarkup = true;
                         break;
+
                     case TokenType.Italic:
-                        ProcessItalic(token, tagStack, result);
+                        ProcessItalic(token, tagsStack, result);
                         break;
+
                     case TokenType.Strong:
-                        ProcessStrong(token, tagStack, result);
+                        ProcessStrong(token, tagsStack, result);
                         break;
+
                     case TokenType.Header:
-                        ProcessHeader(tagStack);
+                        ProcessHeader(token, tagsStack);
                         break;
+
                     case TokenType.End:
-                        ProcessEnd(tagStack, result);
+                        ProcessEnd(tagsStack, result);
                         break;
+
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -70,81 +76,105 @@ namespace Markdown
             return result.ToString();
         }
 
-        private void ProcessStrong(Token token, Stack<Tag> tagStack,
-            StringBuilder result)
+        private void ProcessStrong(Token token, Stack<Tag> tagsStack, StringBuilder result)
         {
-            if (tagStack.Count > 0)
-            {
-                var parent = tagStack.Peek();
-                var parentType = parent.Type;
+            var canOpen = token.CanOpen;
+            var canClose = token.CanClose;
 
-                if (parentType == TokenType.Italic)
+            var parent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
+            if (canClose && tagsStack.Count > 0 && parent.Token.Type == token.Type &&
+                !(parent.Token.InsideWord && parent.Content.ToString().Contains(' '))
+                && !decimal.TryParse(parent.Content.ToString().AsSpan(2), out _) &&
+                parent.Content.ToString().AsSpan(2).Length > 0)
+            {
+                var popParent = tagsStack.Pop();
+                var grandParent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
+                var shouldNotClose = grandParent is not null && grandParent.Token.Type == TokenType.Italic &&
+                                     grandParent.isOpen;
+
+                if (shouldNotClose)
                 {
-                    AppendToParentOrResult(tagStack, result, token.Value);
-                }
-                else if (parentType == token.Type)
-                {
-                    CloseTopTag(tagStack, result);
+                    var newContent = popParent.Content.Append(popParent.Token.Value);
+                    AppendToParentOrResult(tagsStack, result, newContent.ToString());
                 }
                 else
                 {
-                    tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
+                    tagsStack.Push(popParent);
+                    CloseTopTag(tagsStack, result);
                 }
             }
-            else
+            else if (canOpen || (canClose && tagsStack.Count > 0 && tagsStack.Peek().isOpen))
             {
-                tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
-            }
-        }
-
-        private void ProcessItalic(Token token, Stack<Tag> tagStack,
-            StringBuilder result)
-        {
-            if (tagStack.Count > 0 && tagStack.Peek().Type == token.Type)
-            {
-                CloseTopTag(tagStack, result);
+                tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
             }
             else
             {
-                tagStack.Push(new Tag(token.Type, token.Value, new StringBuilder()));
+                AppendToParentOrResult(tagsStack, result, token.Value);
             }
         }
 
-        private void ProcessHeader(Stack<Tag> tagStack)
+        private void ProcessItalic(Token token, Stack<Tag> tagsStack, StringBuilder result)
         {
-            tagStack.Push(new Tag(TokenType.Header, "#", new StringBuilder()));
-        }
-
-        private void ProcessEnd(Stack<Tag> tagStack,
-            StringBuilder result)
-        {
-            while (tagStack.Count > 0)
+            var canOpen = token.CanOpen;
+            var canClose = token.CanClose;
+            var parent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
+            if (canClose && tagsStack.Count > 0 && parent.Token.Type == token.Type &&
+                !(parent.Token.InsideWord && parent.Content.ToString().Contains(' '))
+                && !decimal.TryParse(parent.Content.ToString().AsSpan(1), out _)
+                && parent.Content.ToString().AsSpan(2).Length > 0)
             {
-                var top = tagStack.Pop();
-                string rendered;
-
-                var raw = top.Type is TokenType.Header
-                    ? TagRender.Wrap(top.Type, top.Content.ToString())
-                    : top.Marker +
-                      top.Content;
-                
-                AppendToParentOrResult(tagStack, result, raw);
+                CloseTopTag(tagsStack, result);
+            }
+            else if (canOpen)
+            {
+                tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
+            }
+            else
+            {
+                AppendToParentOrResult(tagsStack, result, token.Value);
             }
         }
 
-        private void AppendToParentOrResult(Stack<Tag> tagStack,
-            StringBuilder result, string content)
+        private void ProcessHeader(Token token, Stack<Tag> tagsStack)
         {
-            if (tagStack.Count > 0) tagStack.Peek().Content.Append(content);
-            else result.Append(content);
+            tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
         }
 
-        private void CloseTopTag(Stack<Tag> tagStack,
-            StringBuilder result)
+        private void ProcessEnd(Stack<Tag> tagsStack, StringBuilder result)
         {
-            var top = tagStack.Pop();
-            var wrapped = TagRender.Wrap(top.Type, top.Content.ToString());
-            AppendToParentOrResult(tagStack, result, wrapped);
+            while (tagsStack.Count > 0)
+            {
+                var top = tagsStack.Pop();
+                var content = top.Content.ToString();
+
+                var raw = top.Token.Type == TokenType.Header
+                    ? TagRender.Wrap(top.Token.Type, content[1..])
+                    : content;
+
+                AppendToParentOrResult(tagsStack, result, raw);
+            }
+        }
+
+        private void AppendToParentOrResult(Stack<Tag> tagsStack, StringBuilder result, string content)
+        {
+            if (tagsStack.Count > 0)
+                tagsStack.Peek().Content.Append(content);
+            else
+                result.Append(content);
+        }
+
+        private void CloseTopTag(Stack<Tag> tagsStack, StringBuilder result)
+        {
+            var top = tagsStack.Pop();
+            var content = top.Content.ToString();
+
+            var markerLength = top.Token.Value.Length;
+            var innerContent = content.Length > markerLength
+                ? content[markerLength..]
+                : string.Empty;
+
+            var wrapped = TagRender.Wrap(top.Token.Type, innerContent);
+            AppendToParentOrResult(tagsStack, result, wrapped);
         }
     }
 }
