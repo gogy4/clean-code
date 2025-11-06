@@ -17,7 +17,7 @@ public class MarkdownTests
     }
 
     [Test]
-    public void Markdown_ShouldProcessLongInputWithoutCrashing_Test()
+    public void Markdown_ShouldProcessLongInputWithoutCrashing()
     {
         var longLine = new string('_', 10_000) + "тест" + new string('_', 10_000);
         var result = render.RenderText(longLine);
