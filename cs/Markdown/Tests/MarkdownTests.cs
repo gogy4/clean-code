@@ -1,13 +1,27 @@
 using System.Diagnostics;
 using FluentAssertions;
-using FluentAssertions.Execution;
+using Markdown.TagUtils.Implementations;
+using Markdown.TokensUtils.Implementations;
 using NUnit.Framework;
 
 namespace Markdown.Tests;
 
 public class MarkdownTests
 {
-    private IRender render = new Render();
+    private TagProcessor tagProcessor;
+    private Tokenizer tokenizer;
+    private IRender render;
+    private TagContentManager tagContentManager;
+    private TagManager tagManager;
+
+    public MarkdownTests()
+    {
+        tagContentManager = new TagContentManager();
+        tagManager = new TagManager(tagContentManager);
+        tagProcessor = new TagProcessor(tagContentManager, tagManager);
+        tokenizer = new Tokenizer();
+        render = new MarkdownRender(tokenizer, tagProcessor);
+    }
 
     [TestCaseSource(nameof(MarkdownCases))]
     public void Markdown_RenderText_ShouldMatchExpected(string line, string expectedAndErrorMessage)
@@ -17,23 +31,55 @@ public class MarkdownTests
     }
 
     [Test]
-    public void Markdown_ShouldProcessLongInputWithoutCrashing()
+    public void Markdown_RenderTime_ShouldScaleLinearly_Test()
     {
-        var longLine = new string('_', 10_000) + "тест" + new string('_', 10_000);
-        var result = render.RenderText(longLine);
+        //Arrange
+        var sizes = new[] { 100, 1000, 3000, 100000 };
+        int? previousSize = null;
+        double? previousTime = null;
+        const int runsPerSize = 5;
 
-        using (new AssertionScope())
+        foreach (var size in sizes)
         {
-            result.Length.Should().BeGreaterThanOrEqualTo(longLine.Length, "рендер не должен обрезать длинный ввод");
+            //Arrange
+            var part = size / 3;
+            var lines = Enumerable.Range(1, size)
+                .Select(i =>
+                {
+                    if (i <= part)
+                        return $"_line {i}_";
+                    return i <= part * 2 ? $"__line {i}__" : $"#line {i}";
+                });
+            var input = string.Join(Environment.NewLine, lines);
 
-            var stopwatch = Stopwatch.StartNew();
-            render.RenderText(longLine);
-            stopwatch.Stop();
+            var totalTime = 0d;
 
-            stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, "рендер должен завершаться за приемлемое время");
+            //Act
+            for (var run = 0; run < runsPerSize; run++)
+            {
+                var sw = Stopwatch.StartNew();
+                render.RenderText(input);
+                sw.Stop();
+                totalTime += sw.Elapsed.TotalMilliseconds;
+            }
+
+            var avgTime = totalTime / runsPerSize;
+
+            //Assert
+            if (previousTime.HasValue && previousSize.HasValue)
+            {
+                var timeRatio = avgTime / previousTime.Value;
+                var sizeRatio = (double)size / previousSize.Value;
+
+                timeRatio.Should().BeLessThanOrEqualTo(sizeRatio * 1.2);
+            }
+
+            previousTime = avgTime;
+            previousSize = size;
         }
     }
-    
+
+
     public static IEnumerable<TestCaseData> MarkdownCases
     {
         get
@@ -69,8 +115,8 @@ public class MarkdownTests
             ).SetName("StrongInsideEm_NoRender");
 
             yield return new TestCaseData(
-                "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка.",
-                "Подчерки внутри текста c цифрами_12_3 или 1__123 не считаются выделением и должны оставаться символами подчерка."
+                "Подчерки внутри текста c цифрами_12_3 или 1__1__23 не считаются выделением и должны оставаться символами подчерка.",
+                "Подчерки внутри текста c цифрами_12_3 или 1__1__23 не считаются выделением и должны оставаться символами подчерка."
             ).SetName("UnderscoresAroundNumbers_NoRender");
 
             yield return new TestCaseData(
