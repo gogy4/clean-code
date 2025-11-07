@@ -15,7 +15,7 @@ public static class MapSpecialSymbol
             '#' when index + 1 < line.Length && line[index + 1] == ' ' => 
                 CreateHeaderToken(line, index),
             '\\' when index + 1 < line.Length => 
-                new Token(line[index].ToString(), TokenType.Escape, false, false, false),
+                new Token(line[index].ToString(), TokenType.Escape, TokenRole.None, TokenPosition.None),
             _ => null
         };
     }
@@ -28,15 +28,15 @@ public static class MapSpecialSymbol
         var nextChar = index + value.Length < line.Length ? line[index + value.Length] : (char?)null;
         var canOpen = nextChar != null && !char.IsWhiteSpace(nextChar.Value);
         var canClose = prevChar != null && !char.IsWhiteSpace(prevChar.Value);
-        var isInsideWord = canOpen && canClose;
-        return new Token(value, type, canOpen, canClose, isInsideWord);
+        
+        return new Token(value, type, canOpen, canClose);
     }
 
     private static Token CreateHeaderToken(string line, int index)
     {
-        var value = "#";
+        const string value = "#";
         var nextChar = index + value.Length < line.Length ? line[index + value.Length] : (char?)null;
         var canOpenAndClose = nextChar != null && char.IsWhiteSpace(nextChar.Value);
-        return new Token(value, TokenType.Header, canOpenAndClose, canOpenAndClose, !canOpenAndClose);
+        return new Token(value, TokenType.Header, canOpenAndClose, canOpenAndClose);
     }
 }

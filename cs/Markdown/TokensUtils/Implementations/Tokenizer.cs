@@ -6,7 +6,7 @@ namespace Markdown.TokensUtils.Implementations;
 
 public class Tokenizer : ITokenizer
 {
-    private static readonly HashSet<char> SpecialSymbols = new() { '\\', '_', '#' };
+    private static readonly HashSet<char> SpecialSymbols = ['\\', '_', '#'];
 
     public IEnumerable<Token> Tokenize(string? line)
     {
@@ -21,7 +21,7 @@ public class Tokenizer : ITokenizer
 
             if (SpecialSymbols.Contains(c) && sb.Length > 0)
             {
-                yield return new Token(sb.ToString(), TokenType.Text, false, false, false);
+                yield return new Token(sb.ToString(), TokenType.Text, false, false);
                 sb.Clear();
             }
 
@@ -45,9 +45,9 @@ public class Tokenizer : ITokenizer
 
         if (sb.Length > 0)
         {
-            yield return new Token(sb.ToString(), TokenType.Text, false, false, false);
+            yield return new Token(sb.ToString(), TokenType.Text, false, false);
         }
 
-        yield return new Token(string.Empty, TokenType.End, false, false, false);
+        yield return new Token(string.Empty, TokenType.End, false, false);
     }
 }
