@@ -186,39 +186,43 @@ public class MarkdownTests
                 .SetName("MultipleLinks_RenderAll");
 
             yield return new TestCaseData(
-                    "[asd[asd(asd])",
-                    "[asd[asd(asd])")
+                    "[Текст с ошибкой[внутри]()",
+                    "[Текст с ошибкой[внутри]()")
                 .SetName("IncorrectLink_NestedBrackets");
 
             yield return new TestCaseData(
-                    "[asd](https://asd.com",
-                    "[asd](https://asd.com")
+                    "[Ссылка без закрытия](https://example.com",
+                    "[Ссылка без закрытия](https://example.com")
                 .SetName("IncorrectLink_MissingClosingParenthesis");
+            
+            yield return new TestCaseData(
+                    "[Ссылка без открытия]https://example.com",
+                    "[Ссылка без открытия]https://example.com")
+                .SetName("IncorrectLink_MissingOpeningParenthesis");
 
             yield return new TestCaseData(
-                    "asd](https://asd.com)",
-                    "asd](https://asd.com)")
+                    "Текст без открывающей скобки](https://example.com)",
+                    "Текст без открывающей скобки](https://example.com)")
                 .SetName("IncorrectLink_MissingOpeningBracket");
 
             yield return new TestCaseData(
-                    "[asd(https://asd.com)",
-                    "[asd(https://asd.com)")
+                    "[Текст без закрывающей скобки(https://example.com)",
+                    "[Текст без закрывающей скобки(https://example.com)")
                 .SetName("IncorrectLink_MissingClosingBracket");
 
             yield return new TestCaseData(
-                    "(https://asd.com)[asd]",
-                    "(https://asd.com)[asd]")
+                    "(https://example.com)[Неправильный порядок]",
+                    "(https://example.com)[Неправильный порядок]")
                 .SetName("IncorrectLink_ReversedOrder");
 
             yield return new TestCaseData(
-                    "[](https://asd.com)",
-                    "[](https://asd.com)")
+                    "[](Ссылка без текста https://example.com)",
+                    "[](Ссылка без текста https://example.com)")
                 .SetName("IncorrectLink_EmptyText");
 
-
             yield return new TestCaseData(
-                    "[Текст]()",
-                    "[Текст]()")
+                    "[Текст с пустой ссылкой]()",
+                    "[Текст с пустой ссылкой]()")
                 .SetName("IncorrectLink_EmptyUrl");
         }
     }
