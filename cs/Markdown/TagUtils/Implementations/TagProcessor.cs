@@ -40,6 +40,10 @@ namespace Markdown.TagUtils.Implementations
                     case TokenType.Strong:
                         tagManager.StrongProcess(token, tagsStack, result);
                         break;
+                    
+                    case TokenType.Link:
+                        tagManager.LinkProcess(token, tagsStack, result);
+                        break;
 
                     case TokenType.Header:
                         tagManager.HeaderProcess(token, tagsStack);

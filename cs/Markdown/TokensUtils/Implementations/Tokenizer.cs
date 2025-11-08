@@ -6,7 +6,7 @@ namespace Markdown.TokensUtils.Implementations;
 
 public class Tokenizer : ITokenizer
 {
-    private static readonly HashSet<char> SpecialSymbols = ['\\', '_', '#'];
+    private static readonly HashSet<char> SpecialSymbols = ['\\', '_', '#', ')', '['];
 
     public IEnumerable<Token> Tokenize(string? line)
     {

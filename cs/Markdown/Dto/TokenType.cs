@@ -7,5 +7,6 @@ public enum TokenType
     Strong,
     Escape,
     Header,
+    Link,
     End
 }

@@ -9,5 +9,5 @@ public interface ITagManager
     public void HeaderProcess(Token token, Stack<Tag> tagsStack);
     public void ItalicProcess(Token token, Stack<Tag> tagsStack, StringBuilder result);
     public void StrongProcess(Token token, Stack<Tag> tagsStack, StringBuilder result);
-
+    public void LinkProcess(Token token, Stack<Tag> tagsStack, StringBuilder result);
 }

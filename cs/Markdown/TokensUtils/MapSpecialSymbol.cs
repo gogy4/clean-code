@@ -8,6 +8,10 @@ public static class MapSpecialSymbol
     {
         return c switch
         {
+            '['  =>
+                CreateLinkToken(line, index, true),
+            ')' => 
+                CreateLinkToken(line, index, false),
             '_' when index + 1 < line.Length && line[index + 1] == '_' => 
                 CreateUnderscoreToken(line, index, true),
             '_' => 
@@ -30,6 +34,16 @@ public static class MapSpecialSymbol
         var canClose = prevChar != null && !char.IsWhiteSpace(prevChar.Value);
         
         return new Token(value, type, canOpen, canClose);
+    }
+
+    private static Token CreateLinkToken(string line, int index, bool isOpen)
+    {
+        var value = isOpen ? "[" : ")";
+        var prevChar = index > 0 ? line[index - 1] : (char?)null;
+        var nextChar = index + value.Length < line.Length ? line[index + value.Length] : (char?)null;
+        var canOpen = nextChar != null && !char.IsWhiteSpace(nextChar.Value);
+        var canClose = prevChar != null && !char.IsWhiteSpace(prevChar.Value);
+        return new Token(value, TokenType.Link, isOpen && canOpen, !isOpen && canClose);
     }
 
     private static Token CreateHeaderToken(string line, int index)
