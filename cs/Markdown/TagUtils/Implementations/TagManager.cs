@@ -5,42 +5,43 @@ using Markdown.TokensUtils;
 
 namespace Markdown.TagUtils.Implementations;
 
-public class TagManager(ITagContentManager contentManager) : ITagManager
+public class TagManager(ITagContext context) : ITagManager
 {
-    public void EndProcess(Stack<Tag> tagsStack, StringBuilder result)
+    public void EndProcess()
     {
-        while (tagsStack.Count > 0)
+        while (context.Tags.Count > 0)
         {
-            contentManager.CloseTopTag(tagsStack, result, true);
+            context.CloseTop(true);
         }
     }
 
-    public void HeaderProcess(Token token, Stack<Tag> tagsStack)
+    public void HeaderProcess(Token token)
     {
-        tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
+        context.Open(new Tag(token, new StringBuilder(token.Value), true));
     }
 
-    public void ItalicProcess(Token token, Stack<Tag> tagsStack, StringBuilder result)
+    public void ItalicProcess(Token token)
     {
-        ProcessTag(token, tagsStack, result, false, (parent, t) =>
+        ProcessTag(token, false, (parent, t) =>
             CloseContext.IsInvalidUnderScoreCloseContext(parent, t, token.Value.Length));
     }
 
-    public void StrongProcess(Token token, Stack<Tag> tagsStack, StringBuilder result)
+    public void StrongProcess(Token token)
     {
-        ProcessTag(token, tagsStack, result, true, (parent, t) =>
+        ProcessTag(token, true, (parent, t) =>
             CloseContext.IsInvalidUnderScoreCloseContext(parent, t, token.Value.Length));
     }
 
-    public void LinkProcess(Token token, Stack<Tag> tagsStack, StringBuilder result)
+    public void LinkProcess(Token token)
     {
-        ProcessTag(token, tagsStack, result, false, (parent, t) =>
+        ProcessTag(token, false, (parent, t) =>
             CloseContext.IsInvalidLinkCloseContext(parent, t, token.Value.Length));
     }
 
-    private void ProcessTag(Token token, Stack<Tag> tagsStack, StringBuilder result, bool isStrong,
+    private void ProcessTag(Token token, bool isStrong,
         Func<Tag, Token, bool> isInvalidCloseContext)
     {
+        var tagsStack = context.Tags;
         var parent = tagsStack.Count > 0 ? tagsStack.Peek() : null;
         var canClose = isStrong ? token.Role is TokenRole.Close : token.Role is TokenRole.Close or TokenRole.Both;
         var canOpen = isStrong
@@ -60,26 +61,26 @@ public class TagManager(ITagContentManager contentManager) : ITagManager
                 if (shouldNotClose)
                 {
                     var newContent = popParent.Content.Append(popParent.Token.Value);
-                    contentManager.AppendToParentOrResult(tagsStack, result, newContent.ToString());
+                    context.Append(newContent.ToString());
                 }
                 else
                 {
                     tagsStack.Push(popParent);
-                    contentManager.CloseTopTag(tagsStack, result);
+                    context.CloseTop();
                 }
             }
             else
             {
-                contentManager.CloseTopTag(tagsStack, result);
+                context.CloseTop();
             }
         }
         else if (canOpen)
         {
-            tagsStack.Push(new Tag(token, new StringBuilder(token.Value), true));
+            context.Open(new Tag(token, new StringBuilder(token.Value), true));
         }
         else
         {
-            contentManager.AppendToParentOrResult(tagsStack, result, token.Value);
+            context.Append(token.Value);
         }
     }
 }

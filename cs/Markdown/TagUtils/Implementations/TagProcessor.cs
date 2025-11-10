@@ -5,60 +5,61 @@ using Markdown.TokensUtils;
 
 namespace Markdown.TagUtils.Implementations
 {
-    public class TagProcessor(ITagContentManager contentManager, ITagManager tagManager) : ITagProcessor
+    public class TagProcessor(ITagContext context, ITagManager tagManager) : ITagProcessor
     {
         public string Process(IEnumerable<Token> tokens)
         {
-            var result = new StringBuilder();
-            var tagsStack = new Stack<Tag>();
-            var skipNextAsMarkup = false;
-
-            foreach (var token in tokens)
+            using (context)
             {
-                if (skipNextAsMarkup)
+                var skipNextAsMarkup = false;
+
+                foreach (var token in tokens)
                 {
-                    contentManager.AppendToParentOrResult(tagsStack, result, token.Value);
-                    skipNextAsMarkup = false;
-                    continue;
-                }
+                    if (skipNextAsMarkup)
+                    {
+                        context.Append(token.Value);
+                        skipNextAsMarkup = false;
+                        continue;
+                    }
 
-                switch (token.Type)
-                {
-                    case TokenType.Text:
-                        contentManager.AppendToParentOrResult(tagsStack, result, token.Value);
-                        break;
+                    switch (token.Type)
+                    {
+                        case TokenType.Text:
+                            context.Append(token.Value);                        
+                            break;
 
-                    case TokenType.Escape:
-                        contentManager.AppendToParentOrResult(tagsStack, result, token.Value);
-                        skipNextAsMarkup = true;
-                        break;
+                        case TokenType.Escape:
+                            context.Append(token.Value);
+                            skipNextAsMarkup = true;
+                            break;
 
-                    case TokenType.Italic:
-                        tagManager.ItalicProcess(token, tagsStack, result);
-                        break;
+                        case TokenType.Italic:
+                            tagManager.ItalicProcess(token);
+                            break;
 
-                    case TokenType.Strong:
-                        tagManager.StrongProcess(token, tagsStack, result);
-                        break;
+                        case TokenType.Strong:
+                            tagManager.StrongProcess(token);
+                            break;
                     
-                    case TokenType.Link:
-                        tagManager.LinkProcess(token, tagsStack, result);
-                        break;
+                        case TokenType.Link:
+                            tagManager.LinkProcess(token);
+                            break;
 
-                    case TokenType.Header:
-                        tagManager.HeaderProcess(token, tagsStack);
-                        break;
+                        case TokenType.Header:
+                            tagManager.HeaderProcess(token);
+                            break;
 
-                    case TokenType.End:
-                        tagManager.EndProcess(tagsStack, result);
-                        break;
+                        case TokenType.End:
+                            tagManager.EndProcess();
+                            break;
 
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
-            }
 
-            return result.ToString();
+                return context.Content.ToString();
+            }
         }
     }
 }

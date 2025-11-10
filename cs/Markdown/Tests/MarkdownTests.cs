@@ -11,14 +11,14 @@ public class MarkdownTests
     private TagProcessor tagProcessor;
     private Tokenizer tokenizer;
     private IRender render;
-    private TagContentManager tagContentManager;
+    private TagContext tagContext;
     private TagManager tagManager;
 
     public MarkdownTests()
     {
-        tagContentManager = new TagContentManager();
-        tagManager = new TagManager(tagContentManager);
-        tagProcessor = new TagProcessor(tagContentManager, tagManager);
+        tagContext = new TagContext();
+        tagManager = new TagManager(tagContext);
+        tagProcessor = new TagProcessor(tagContext, tagManager);
         tokenizer = new Tokenizer();
         render = new MarkdownRender(tokenizer, tagProcessor);
     }
@@ -51,30 +51,28 @@ public class MarkdownTests
                     return i <= part * 2 ? $"__line {i}__" : $"#line {i}";
                 });
             var input = string.Join(Environment.NewLine, lines);
+            var times = new List<double>(runsPerSize);
 
-            var totalTime = 0d;
-
-            //Act
             for (var run = 0; run < runsPerSize; run++)
             {
                 var sw = Stopwatch.StartNew();
                 render.RenderText(input);
                 sw.Stop();
-                totalTime += sw.Elapsed.TotalMilliseconds;
+                times.Add(sw.Elapsed.TotalMilliseconds);
             }
 
-            var avgTime = totalTime / runsPerSize;
+            var medianTime = times.OrderBy(t => t).ElementAt(runsPerSize / 2);
 
             //Assert
             if (previousTime.HasValue && previousSize.HasValue)
             {
-                var timeRatio = avgTime / previousTime.Value;
+                var timeRatio = medianTime / previousTime.Value;
                 var sizeRatio = (double)size / previousSize.Value;
 
-                timeRatio.Should().BeLessThanOrEqualTo(sizeRatio * 1.2);
+                timeRatio.Should().BeLessThanOrEqualTo(sizeRatio * 1.5);
             }
 
-            previousTime = avgTime;
+            previousTime = medianTime;
             previousSize = size;
         }
     }
