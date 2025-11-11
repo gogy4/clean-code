@@ -38,7 +38,7 @@ public static class CloseContext
         return openParenIndex - closeBracketIndex != 1;
     }
 
-    private static bool IsInvalidCloseContext(Tag parent, Token token, int markerLength)
+    private static bool IsInvalidCloseContext(Tag? parent, Token token, int markerLength)
     {
         if (parent == null)
         {

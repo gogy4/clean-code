@@ -12,13 +12,13 @@ public class MarkdownTests
     private Tokenizer tokenizer;
     private IRender render;
     private TagContext tagContext;
-    private TagManager tagManager;
+    private TagStrategyFactory factory;
 
     public MarkdownTests()
     {
         tagContext = new TagContext();
-        tagManager = new TagManager(tagContext);
-        tagProcessor = new TagProcessor(tagContext, tagManager);
+        factory = new TagStrategyFactory(tagContext);
+        tagProcessor = new TagProcessor(tagContext, factory);
         tokenizer = new Tokenizer();
         render = new MarkdownRender(tokenizer, tagProcessor);
     }
