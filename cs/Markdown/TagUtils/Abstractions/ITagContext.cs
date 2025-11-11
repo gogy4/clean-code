@@ -10,4 +10,5 @@ public interface ITagContext : IDisposable
     public void Open(Tag tag);
     public Stack<Tag> Tags { get; }
     public StringBuilder Content { get; }
+    public bool SkipNextAsMarkup { get; set; }
 }

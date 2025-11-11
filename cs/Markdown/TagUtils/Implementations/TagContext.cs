@@ -7,14 +7,9 @@ namespace Markdown.TagUtils.Implementations;
 
 public class TagContext : ITagContext
 {
-    public Stack<Tag> Tags { get; }
-    public StringBuilder Content { get; }
-
-    public TagContext()
-    {
-        Tags = new Stack<Tag>();
-        Content = new StringBuilder();
-    }
+    public Stack<Tag> Tags { get; } = new();
+    public StringBuilder Content { get; } = new();
+    public bool SkipNextAsMarkup { get; set; } 
 
     public void Append(string content)
     {
