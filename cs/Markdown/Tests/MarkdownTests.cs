@@ -31,9 +31,8 @@ public class MarkdownTests
     }
 
     [Test]
-    public void Markdown_RenderTime_ShouldScaleLinearly_Test()
+    public void Markdown_RenderTime_ShouldScaleLinearly()
     {
-        //Arrange
         var sizes = new[] { 100, 1000, 3000, 100000 };
         int? previousSize = null;
         double? previousTime = null;
@@ -41,13 +40,14 @@ public class MarkdownTests
 
         foreach (var size in sizes)
         {
-            //Arrange
             var part = size / 3;
             var lines = Enumerable.Range(1, size)
                 .Select(i =>
                 {
                     if (i <= part)
+                    {
                         return $"_line {i}_";
+                    }
                     return i <= part * 2 ? $"__line {i}__" : $"#line {i}";
                 });
             var input = string.Join(Environment.NewLine, lines);
@@ -62,8 +62,7 @@ public class MarkdownTests
             }
 
             var medianTime = times.OrderBy(t => t).ElementAt(runsPerSize / 2);
-
-            //Assert
+            
             if (previousTime.HasValue && previousSize.HasValue)
             {
                 var timeRatio = medianTime / previousTime.Value;
